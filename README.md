@@ -1,2 +1,3 @@
 # DataVisualization
-Project2
+
+App for Project 2
