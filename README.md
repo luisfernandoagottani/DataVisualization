@@ -1,3 +1,3 @@
-# DataVisualization
+# Deploying your Dash app online
 
-App for Project 2
+Enjoy at https://dashexample.herokuapp.com/
