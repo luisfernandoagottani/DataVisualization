@@ -696,14 +696,15 @@ def render_content(tab):
     elif tab == 'tab-7':
         return dcc.Markdown('''
                     # Links for download:
-                    * [https://unstats.un.org/sdgs/indicators/database/](/)
+                    * https://unstats.un.org/sdgs/indicators/database/
 
-                    * [http://www.fao.org/faostat/en/#data](/)
+                    * http://www.fao.org/faostat/en/#data
 
-                    * [https://databank.worldbank.org/source/world-development-indicators](/)
+                    * https://databank.worldbank.org/source/world-development-indicators
+
                     # GitHub
 
-                    * [https://github.com/luisfernandoagottani/DataVisualization](/)
+                    * https://github.com/luisfernandoagottani/DataVisualization
                     ''')   
 
 
