@@ -2,7 +2,6 @@ gunicorn
 plotly
 dash
 dash_table
-requests
 dash_renderer
 dash-html-components
 dash-core-components
