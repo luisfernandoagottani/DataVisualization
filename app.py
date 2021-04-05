@@ -1,669 +1,388 @@
 import dash
+import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
-import plotly.graph_objs as go
-import pandas as pd
-import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
 import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+from dash.dependencies import Input, Output
+import numpy as np
+from urllib.request import urlopen
 
-app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+import os
+from PIL import Image
+import glob
 
+############################################################################################################################################################
 
-df = pd.read_excel('Indicadores_base.xlsx', sheet_name = 'All_data')
-
-layout_home = html.Div([
-    html.Div([
-        dcc.Graph(
-            id='world',
-            figure = px.choropleth(df[df['Indicator Name'] == 'GDP growth (annual %)'], 
-                        locations="Country Code", 
-                        color="Value", 
-                        hover_name="Country Name",
-                        animation_frame="Year",
-                        width = 1000,
-                        height = 750,
-                        range_color = [0,10],
-                        title = ' CPLP Countries: GDP growth (annual %)')
-        )
-    ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
-])
-
-urbanism_indicators = df[df['Area']=='Urbanism']['Indicator Name'].unique()
-
-layout_urbanism = html.Div([
-    html.Div([
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-xaxis-column_u',
-                options=[{'label': i, 'value': i} for i in urbanism_indicators],
-                value='Proportion of population using basic drinking water services, RURAL (%)'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-xaxis-type_u',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ],
-        style={'width': '49%', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-yaxis-column_u',
-                options=[{'label': i, 'value': i} for i in urbanism_indicators],
-                value='Proportion of population using basic drinking water services, URBAN (%)'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-yaxis-type_u',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ], style={'width': '49%', 'float': 'right', 'display': 'inline-block'})
-    ], style={
-        'borderBottom': 'thin lightgrey solid',
-        'backgroundColor': 'rgb(250, 250, 250)',
-        'padding': '10px 5px'
-    }),
-
-    html.Div([
-        dcc.Graph(
-            id='crossfilter-indicator-scatter_u',
-            hoverData={'points': [{'customdata': 'Portugal'}]}
-        )
-    ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
-    html.Div([
-        dcc.Graph(id='x-time-series_u'),
-        dcc.Graph(id='y-time-series_u'),
-    ], style={'display': 'inline-block', 'width': '49%'}),
-
-    html.Div(dcc.Slider(
-        id='crossfilter-year--slider_u',
-        min=df['Year'].min(),
-        max=df['Year'].max(),
-        value=df['Year'].min(),
-        step=None,
-        marks={str(year): str(year) for year in df['Year'].unique()}
-    ), style={'width': '49%', 'padding': '0px 20px 20px 20px'})
-])
-
-@app.callback(
-    dash.dependencies.Output('crossfilter-indicator-scatter_u', 'figure'),
-    [dash.dependencies.Input('crossfilter-xaxis-column_u', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-column_u', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_u', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_u', 'value'),
-     dash.dependencies.Input('crossfilter-year--slider_u', 'value')])
-def update_graph(xaxis_column_name, yaxis_column_name,
-                 xaxis_type, yaxis_type,
-                 year_value):
-    dff = df[(df['Year'] == year_value) & (df['Area'] == 'Urbanism')]
-
-    return {
-        'data': [go.Scatter(
-            x=dff[dff['Indicator Name'] == xaxis_column_name]['Value'],
-            y=dff[dff['Indicator Name'] == yaxis_column_name]['Value'],
-            text=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            customdata=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            mode='markers',
-            marker={
-                'size': 15,
-                'opacity': 0.5,
-                'color': '#0470A3',
-                'line': {'width': 0.5, 'color': 'white'}
-            }
-        )],
-        'layout': go.Layout(
-            xaxis={
-                'title': xaxis_column_name,
-                'type': 'linear' if xaxis_type == 'Linear' else 'log'
-            },
-            yaxis={
-                'title': yaxis_column_name,
-                'type': 'linear' if yaxis_type == 'Linear' else 'log'
-            },
-            margin={'l': 40, 'b': 40, 't': 20, 'r': 0},
-            height=500,
-            hovermode='closest'
-        )
-    }
-
-def create_time_series(dff, axis_type, title):
-    return {
-        'data': [go.Scatter(
-            x=dff['Year'],
-            y=dff['Value'],
-            mode='lines+markers'
-        )],
-        'layout': {
-            'height': 250,
-            'margin': {'l': 30, 'b': 60, 'r': 20, 't': 10},
-            'annotations': [{
-                'x': 0, 'y': 0.85, 'xanchor': 'left', 'yanchor': 'bottom',
-                'xref': 'paper', 'yref': 'paper', 'showarrow': False,
-                'align': 'left', 'bgcolor': 'rgba(255, 255, 255, 0.5)',
-                'text': title
-            }],
-            'yaxis': {'type': 'linear' if axis_type == 'Linear' else 'log'},
-            'xaxis': {'showgrid': False}
-        }
-    }
-
-@app.callback(
-    dash.dependencies.Output('x-time-series_u', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_u', 'hoverData'),
-     dash.dependencies.Input('crossfilter-xaxis-column_u', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_u', 'value')])
-def update_y_timeseries(hoverData, xaxis_column_name, axis_type):
-    country_name = hoverData['points'][0]['customdata']
-    dff = df[df['Country Name'] == country_name]
-    dff = dff[dff['Indicator Name'] == xaxis_column_name]
-    title = '<b>{}</b><br>{}'.format(country_name, xaxis_column_name)
-    return create_time_series(dff, axis_type, title)
-
-@app.callback(
-    dash.dependencies.Output('y-time-series_u', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_u', 'hoverData'),
-     dash.dependencies.Input('crossfilter-yaxis-column_u', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_u', 'value')])
-def update_x_timeseries(hoverData, yaxis_column_name, axis_type):
-    dff = df[df['Country Name'] == hoverData['points'][0]['customdata']]
-    dff = dff[dff['Indicator Name'] == yaxis_column_name]
-    return create_time_series(dff, axis_type, yaxis_column_name)
-
-health_indicators = df[df['Area']=='Health']['Indicator Name'].unique()
-
-layout_health = html.Div([
-    html.Div([
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-xaxis-column_h',
-                options=[{'label': i, 'value': i} for i in health_indicators],
-                value='Neonatal mortality rate (deaths per 1,000 live births)'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-xaxis-type_h',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ],
-        style={'width': '49%', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-yaxis-column_h',
-                options=[{'label': i, 'value': i} for i in health_indicators],
-                value='Prevalence of undernourishment (%)'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-yaxis-type_h',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ], style={'width': '49%', 'float': 'right', 'display': 'inline-block'})
-    ], style={
-        'borderBottom': 'thin lightgrey solid',
-        'backgroundColor': 'rgb(250, 250, 250)',
-        'padding': '10px 5px'
-    }),
-
-    html.Div([
-        dcc.Graph(
-            id='crossfilter-indicator-scatter_h',
-            hoverData={'points': [{'customdata': 'Portugal'}]}
-        )
-    ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
-    html.Div([
-        dcc.Graph(id='x-time-series_h'),
-        dcc.Graph(id='y-time-series_h'),
-    ], style={'display': 'inline-block', 'width': '49%'}),
-
-    html.Div(dcc.Slider(
-        id='crossfilter-year--slider_h',
-        min=df['Year'].min(),
-        max=df['Year'].max(),
-        value=df['Year'].min(),
-        step=None,
-        marks={str(year): str(year) for year in df['Year'].unique()}
-    ), style={'width': '49%', 'padding': '0px 20px 20px 20px'})
-])
-
-@app.callback(
-    dash.dependencies.Output('crossfilter-indicator-scatter_h', 'figure'),
-    [dash.dependencies.Input('crossfilter-xaxis-column_h', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-column_h', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_h', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_h', 'value'),
-     dash.dependencies.Input('crossfilter-year--slider_h', 'value')])
-def update_graph(xaxis_column_name, yaxis_column_name,
-                 xaxis_type, yaxis_type,
-                 year_value):
-    dff = df[(df['Year'] == year_value) & (df['Area'] == 'Health')]
-
-    return {
-        'data': [go.Scatter(
-            x=dff[dff['Indicator Name'] == xaxis_column_name]['Value'],
-            y=dff[dff['Indicator Name'] == yaxis_column_name]['Value'],
-            text=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            customdata=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            mode='markers',
-            marker={
-                'size': 15,
-                'opacity': 0.5,
-                'color': '#02981E',
-                'line': {'width': 0.5, 'color': 'green'}
-            }
-        )],
-        'layout': go.Layout(
-            xaxis={
-                'title': xaxis_column_name,
-                'type': 'linear' if xaxis_type == 'Linear' else 'log'
-            },
-            yaxis={
-                'title': yaxis_column_name,
-                'type': 'linear' if yaxis_type == 'Linear' else 'log'
-            },
-            margin={'l': 40, 'b': 40, 't': 20, 'r': 0},
-            height=500,
-            hovermode='closest'
-        )
-    }
-
-def create_time_series(dff, axis_type, title):
-    return {
-        'data': [go.Scatter(
-            x=dff['Year'],
-            y=dff['Value'],
-            mode='lines+markers'
-        )],
-        'layout': {
-            'height': 250,
-            'margin': {'l': 30, 'b': 60, 'r': 20, 't': 10},
-            'annotations': [{
-                'x': 0, 'y': 0.85, 'xanchor': 'left', 'yanchor': 'bottom',
-                'xref': 'paper', 'yref': 'paper', 'showarrow': False,
-                'align': 'left', 'bgcolor': 'rgba(255, 255, 255, 0.5)',
-                'text': title
-            }],
-            'yaxis': {'type': 'linear' if axis_type == 'Linear' else 'log'},
-            'xaxis': {'showgrid': False}
-        }
-    }
-
-@app.callback(
-    dash.dependencies.Output('x-time-series_h', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_h', 'hoverData'),
-     dash.dependencies.Input('crossfilter-xaxis-column_h', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_h', 'value')])
-def update_y_timeseries(hoverData, xaxis_column_name, axis_type):
-    country_name = hoverData['points'][0]['customdata']
-    dff = df[df['Country Name'] == country_name]
-    dff = dff[dff['Indicator Name'] == xaxis_column_name]
-    title = '<b>{}</b><br>{}'.format(country_name, xaxis_column_name)
-    return create_time_series(dff, axis_type, title)
-
-@app.callback(
-    dash.dependencies.Output('y-time-series_h', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_h', 'hoverData'),
-     dash.dependencies.Input('crossfilter-yaxis-column_h', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_h', 'value')])
-def update_x_timeseries(hoverData, yaxis_column_name, axis_type):
-    dff = df[df['Country Name'] == hoverData['points'][0]['customdata']]
-    dff = dff[dff['Indicator Name'] == yaxis_column_name]
-    return create_time_series(dff, axis_type, yaxis_column_name)
-
-monetary_indicators = df[df['Area']=='Monetary']['Indicator Name'].unique()
-
-layout_monetary = html.Div([
-    html.Div([
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-xaxis-column_m',
-                options=[{'label': i, 'value': i} for i in monetary_indicators],
-                value='Number of commercial bank branches per 100,000 adults'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-xaxis-type_m',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ],
-        style={'width': '49%', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-yaxis-column_m',
-                options=[{'label': i, 'value': i} for i in monetary_indicators],
-                value='GDP growth (annual %)'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-yaxis-type_m',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ], style={'width': '49%', 'float': 'right', 'display': 'inline-block'})
-    ], style={
-        'borderBottom': 'thin lightgrey solid',
-        'backgroundColor': 'rgb(250, 250, 250)',
-        'padding': '10px 5px'
-    }),
-
-    html.Div([
-        dcc.Graph(
-            id='crossfilter-indicator-scatter_m',
-            hoverData={'points': [{'customdata': 'Portugal'}]}
-        )
-    ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
-    html.Div([
-        dcc.Graph(id='x-time-series_m'),
-        dcc.Graph(id='y-time-series_m'),
-    ], style={'display': 'inline-block', 'width': '49%'}),
-
-    html.Div(dcc.Slider(
-        id='crossfilter-year--slider_m',
-        min=df['Year'].min(),
-        max=df['Year'].max(),
-        value=df['Year'].min(),
-        step=None,
-        marks={str(year): str(year) for year in df['Year'].unique()}
-    ), style={'width': '49%', 'padding': '0px 20px 20px 20px'})
-])
-
-@app.callback(
-    dash.dependencies.Output('crossfilter-indicator-scatter_m', 'figure'),
-    [dash.dependencies.Input('crossfilter-xaxis-column_m', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-column_m', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_m', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_m', 'value'),
-     dash.dependencies.Input('crossfilter-year--slider_m', 'value')])
-def update_graph(xaxis_column_name, yaxis_column_name,
-                 xaxis_type, yaxis_type,
-                 year_value):
-    dff = df[(df['Year'] == year_value) & (df['Area'] == 'Monetary')]
-
-    return {
-        'data': [go.Scatter(
-            x=dff[dff['Indicator Name'] == xaxis_column_name]['Value'],
-            y=dff[dff['Indicator Name'] == yaxis_column_name]['Value'],
-            text=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            customdata=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            mode='markers',
-            marker={
-                'size': 15,
-                'opacity': 0.5,
-                'color': '#E1D607',
-                'line': {'width': 0.5, 'color': 'white'}
-            }
-        )],
-        'layout': go.Layout(
-            xaxis={
-                'title': xaxis_column_name,
-                'type': 'linear' if xaxis_type == 'Linear' else 'log'
-            },
-            yaxis={
-                'title': yaxis_column_name,
-                'type': 'linear' if yaxis_type == 'Linear' else 'log'
-            },
-            margin={'l': 40, 'b': 40, 't': 20, 'r': 0},
-            height=500,
-            hovermode='closest'
-        )
-    }
-
-def create_time_series(dff, axis_type, title):
-    return {
-        'data': [go.Scatter(
-            x=dff['Year'],
-            y=dff['Value'],
-            mode='lines+markers'
-        )],
-        'layout': {
-            'height': 250,
-            'margin': {'l': 30, 'b': 60, 'r': 20, 't': 10},
-            'annotations': [{
-                'x': 0, 'y': 0.85, 'xanchor': 'left', 'yanchor': 'bottom',
-                'xref': 'paper', 'yref': 'paper', 'showarrow': False,
-                'align': 'left', 'bgcolor': 'rgba(255, 255, 255, 0.5)',
-                'text': title
-            }],
-            'yaxis': {'type': 'linear' if axis_type == 'Linear' else 'log'},
-            'xaxis': {'showgrid': False}
-        }
-    }
-
-@app.callback(
-    dash.dependencies.Output('x-time-series_m', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_m', 'hoverData'),
-     dash.dependencies.Input('crossfilter-xaxis-column_m', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_m', 'value')])
-def update_y_timeseries(hoverData, xaxis_column_name, axis_type):
-    country_name = hoverData['points'][0]['customdata']
-    dff = df[df['Country Name'] == country_name]
-    dff = dff[dff['Indicator Name'] == xaxis_column_name]
-    title = '<b>{}</b><br>{}'.format(country_name, xaxis_column_name)
-    return create_time_series(dff, axis_type, title)
-
-@app.callback(
-    dash.dependencies.Output('y-time-series_m', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_m', 'hoverData'),
-     dash.dependencies.Input('crossfilter-yaxis-column_m', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_m', 'value')])
-def update_x_timeseries(hoverData, yaxis_column_name, axis_type):
-    dff = df[df['Country Name'] == hoverData['points'][0]['customdata']]
-    dff = dff[dff['Indicator Name'] == yaxis_column_name]
-    return create_time_series(dff, axis_type, yaxis_column_name)
-
-enviroment_indicators = df[df['Area']=='Enviroment']['Indicator Name'].unique()
-
-layout_enviroment = html.Div([
-    html.Div([
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-xaxis-column_e',
-                options=[{'label': i, 'value': i} for i in enviroment_indicators],
-                value='Carbon dioxide emissions from fuel combustion (millions of tonnes)'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-xaxis-type_e',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ],
-        style={'width': '49%', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Dropdown(
-                id='crossfilter-yaxis-column_e',
-                options=[{'label': i, 'value': i} for i in enviroment_indicators],
-                value='Forest area as a proportion of total land area (%)'
-            ),
-            dcc.RadioItems(
-                id='crossfilter-yaxis-type_e',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ], style={'width': '49%', 'float': 'right', 'display': 'inline-block'})
-    ], style={
-        'borderBottom': 'thin lightgrey solid',
-        'backgroundColor': 'rgb(250, 250, 250)',
-        'padding': '10px 5px'
-    }),
-
-    html.Div([
-        dcc.Graph(
-            id='crossfilter-indicator-scatter_e',
-            hoverData={'points': [{'customdata': 'Portugal'}]}
-        )
-    ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
-    html.Div([
-        dcc.Graph(id='x-time-series_e'),
-        dcc.Graph(id='y-time-series_e'),
-    ], style={'display': 'inline-block', 'width': '49%'}),
-
-    html.Div(dcc.Slider(
-        id='crossfilter-year--slider_e',
-        min=df['Year'].min(),
-        max=df['Year'].max(),
-        value=df['Year'].min(),
-        step=None,
-        marks={str(year): str(year) for year in df['Year'].unique()}
-    ), style={'width': '49%', 'padding': '0px 20px 20px 20px'})
-])
-
-@app.callback(
-    dash.dependencies.Output('crossfilter-indicator-scatter_e', 'figure'),
-    [dash.dependencies.Input('crossfilter-xaxis-column_e', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-column_e', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_e', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_e', 'value'),
-     dash.dependencies.Input('crossfilter-year--slider_e', 'value')])
-def update_graph(xaxis_column_name, yaxis_column_name,
-                 xaxis_type, yaxis_type,
-                 year_value):
-    dff = df[(df['Year'] == year_value) & (df['Area'] == 'Enviroment')]
-
-    return {
-        'data': [go.Scatter(
-            x=dff[dff['Indicator Name'] == xaxis_column_name]['Value'],
-            y=dff[dff['Indicator Name'] == yaxis_column_name]['Value'],
-            text=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            customdata=dff[dff['Indicator Name'] == yaxis_column_name]['Country Name'],
-            mode='markers',
-            marker={
-                'size': 15,
-                'opacity': 0.5,
-                'color': '#BB530F',
-                'line': {'width': 0.5, 'color': 'white'}
-            }
-        )],
-        'layout': go.Layout(
-            xaxis={
-                'title': xaxis_column_name,
-                'type': 'linear' if xaxis_type == 'Linear' else 'log'
-            },
-            yaxis={
-                'title': yaxis_column_name,
-                'type': 'linear' if yaxis_type == 'Linear' else 'log'
-            },
-            margin={'l': 40, 'b': 40, 't': 20, 'r': 0},
-            height=500,
-            hovermode='closest'
-        )
-    }
-
-def create_time_series(dff, axis_type, title):
-    return {
-        'data': [go.Scatter(
-            x=dff['Year'],
-            y=dff['Value'],
-            mode='lines+markers'
-        )],
-        'layout': {
-            'height': 250,
-            'margin': {'l': 30, 'b': 60, 'r': 20, 't': 10},
-            'annotations': [{
-                'x': 0, 'y': 0.85, 'xanchor': 'left', 'yanchor': 'bottom',
-                'xref': 'paper', 'yref': 'paper', 'showarrow': False,
-                'align': 'left', 'bgcolor': 'rgba(255, 255, 255, 0.5)',
-                'text': title
-            }],
-            'yaxis': {'type': 'linear' if axis_type == 'Linear' else 'log'},
-            'xaxis': {'showgrid': False}
-        }
-    }
-
-@app.callback(
-    dash.dependencies.Output('x-time-series_e', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_e', 'hoverData'),
-     dash.dependencies.Input('crossfilter-xaxis-column_e', 'value'),
-     dash.dependencies.Input('crossfilter-xaxis-type_e', 'value')])
-def update_y_timeseries(hoverData, xaxis_column_name, axis_type):
-    country_name = hoverData['points'][0]['customdata']
-    dff = df[df['Country Name'] == country_name]
-    dff = dff[dff['Indicator Name'] == xaxis_column_name]
-    title = '<b>{}</b><br>{}'.format(country_name, xaxis_column_name)
-    return create_time_series(dff, axis_type, title)
-
-@app.callback(
-    dash.dependencies.Output('y-time-series_e', 'figure'),
-    [dash.dependencies.Input('crossfilter-indicator-scatter_e', 'hoverData'),
-     dash.dependencies.Input('crossfilter-yaxis-column_e', 'value'),
-     dash.dependencies.Input('crossfilter-yaxis-type_e', 'value')])
-def update_x_timeseries(hoverData, yaxis_column_name, axis_type):
-    dff = df[df['Country Name'] == hoverData['points'][0]['customdata']]
-    dff = dff[dff['Indicator Name'] == yaxis_column_name]
-    return create_time_series(dff, axis_type, yaxis_column_name)
+import json
+# with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+#     counties = json.load(response)
 
 
-# the style arguments for the sidebar. We use position:fixed and a fixed width
-SIDEBAR_STYLE = {
-    "position": "fixed",
-    "top": 0,
-    "left": 0,
-    "bottom": 0,
-    "width": "16rem",
-    "padding": "2rem 1rem",
-    "background-color": "#035D9B"
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+colors = {
+    'background': '#FFFFFF',
+    'text': '#111111'
 }
+############################################################################################################################################################
 
-# the styles for the main content position it to the right of the sidebar and
-# add some padding.
-CONTENT_STYLE = {
-    "margin-left": "18rem",
-    "margin-right": "2rem",
-    "padding": "2rem 1rem",
-}
 
-sidebar = html.Div(
-    [
-        html.H2("CPLP Countries", className="display-4", style={'color': 'white'}),
-        html.Hr(),
-        html.P(
-            "Analysis", className="lead", style={'color': 'white'}
-        ),
-        dbc.Nav(
-            [
-                dbc.NavLink("Home", href="/", active="exact", style={'color': 'white'}),
-                dbc.NavLink("Urbanism", href="/page-1", active="exact", style={'color': 'white'}),
-                dbc.NavLink("Health", href="/page-2", active="exact", style={'color': 'white'}),
-                dbc.NavLink("Monetary", href="/page-3", active="exact", style={'color': 'white'}),
-                dbc.NavLink("Enviroment", href="/page-4", active="exact", style={'color': 'white'}),
-            ],
-            vertical=True,
-            pills=True,
-        ),
-    ],
-    style=SIDEBAR_STYLE,
+
+
+'''LOADING DATA'''
+st = pd.read_csv('weekly_deaths.csv' , sep = ',').fillna(0)
+df = pd.read_csv('USA_diseases.csv').drop(columns = ['Unnamed: 0', 'MMWR Year','MMWR Week', 'Jurisdiction of Occurrence'])
+
+st.loc[:,'All Cause'] = st.loc[:,'All Cause'].map(lambda x: x*1000 if x < 20 else x)
+st.loc[:,'Natural Cause'] = st.loc[:,'Natural Cause'].map(lambda x: x*1000 if x < 20 else x)
+st.loc[:,'Malignant neoplasms (C00-C97)'] = st.loc[:,'Malignant neoplasms (C00-C97)'].map(lambda x: x*1000 if x < 10 else x)
+st.loc[:,'Diseases of heart (I00-I09,I11,I13,I20-I51)'] = st.loc[:,'Diseases of heart (I00-I09,I11,I13,I20-I51)'].map(lambda x: x*1000 if x < 10 else x)
+st.loc[:,'COVID-19 (U071, Multiple Cause of Death)'] = st.loc[:,'COVID-19 (U071, Multiple Cause of Death)'].map(lambda x: x*1000 if x < 10 else x)
+st.loc[:,'COVID-19 (U071, Underlying Cause of Death)'] = st.loc[:,'COVID-19 (U071, Underlying Cause of Death)'].map(lambda x: x*1000 if x < 10 else x)
+##############################################################################
+diseases1 = df.iloc[:, 5:-1].columns
+
+diseases = st.iloc[:, 5:].columns
+
+
+st['Week Ending Date'] = pd.to_datetime(st['Week Ending Date'])
+
+AL = st[st['State'] == 'Alabama']
+AL = AL.sort_values(by='Week Ending Date')
+AL = AL[AL['All Cause']!=0]
+
+random_x = AL['Week Ending Date']
+random_y0 = AL['All Cause']
+
+
+
+############################################################################################################################################################
+
+
+# Maybe you needed to display plot in jupyter notebook
+import plotly.offline as pyo
+pyo.init_notebook_mode()
+
+# Load exmples data
+df.sort_values(by = ['Week Ending Date'], inplace = True)
+
+# Base plot
+fig = go.Figure(
+    layout=go.Layout(
+        updatemenus=[dict(type="buttons", direction="right", x=0.3, y=1.4), ],
+        xaxis=dict(range=["2014-04-01", "2021-03-13"],
+                   autorange=False, tickwidth=2,
+                   title_text="Time"),
+        yaxis=dict(range=[0, 4000],
+                   autorange=False,
+                   title_text="Disease"),
+        title="Diseases",
+    ))
+
+# Add traces
+init = 1
+
+fig.add_trace(
+    go.Scatter(x=df['Week Ending Date'],
+               y=np.log2(df['Diabetes mellitus'])[:init],
+               name="Diabetes",
+               visible=True,
+               line=dict(color="#33CFA5"),
+                  mode = 'lines'))
+
+fig.add_trace(
+    go.Scatter(x=df['Week Ending Date'][:init],
+               y=np.log2(df['Influenza and pneumonia'])[:init],
+               name="Influenza & Pnemonia",
+               visible=True,
+               line=dict(color="#bf00ff"),
+              mode = 'lines'))
+
+
+fig.add_trace(
+    go.Scatter(x=df['Week Ending Date'][:init],
+               y=np.log2(df['Symptoms, signs and abnormal clinical and laboratory findings'])[:init],
+               name="Abnormal",
+               visible=True,
+               line=dict(color="#ff0000"),
+              mode = 'lines'))
+
+# Add images
+
+
+
+
+# Set templates
+fig.update_layout(template="plotly_white")
+
+#img = Image.open('images_LOG.png')
+
+img = Image.open('images_CPLP_4.jpg')
+
+#fig.update_layout(images=
+
+fig.layout.images = [dict(
+                  source= img,
+                  xref= "x",
+                  yref= "y",
+                  x= 0,
+                  y= 3,
+                  sizex= 2,
+                  sizey= 2,
+                  sizing= "stretch",
+                  opacity= 0.5,
+                  layer= "below")]
+
+
+# Animation
+fig.update(frames=[
+    go.Frame(
+        data=[
+            go.Scatter(x=df['Week Ending Date'][:k], y=df['Diabetes mellitus'][:k]),
+            go.Scatter(x=df['Week Ending Date'][:k], y=df['Influenza and pneumonia'][:k]),
+            go.Scatter(x=df['Week Ending Date'][:k], y=df['Symptoms, signs and abnormal clinical and laboratory findings'][:k]),
+        ])
+    for k in range(init, len(df)+1)])
+
+# Extra Formatting
+fig.update_xaxes(ticks="outside", tickwidth=2, tickcolor='white', ticklen=10)
+fig.update_yaxes(ticks="outside", tickwidth=2, tickcolor='white', ticklen=1)
+fig.update_layout(yaxis_tickformat='-')
+fig.update_layout(legend=dict(x=0, y=1.1), legend_orientation="h")
+
+# Buttons
+fig.update_layout(
+    updatemenus=[
+        dict(
+            buttons=list([
+                dict(label="Play",
+                        method="animate",
+                    args=[None, {"frame": {"duration": 1}}]),
+                dict(label="Diabetes",
+                    method="update",
+                    args=[{"visible": [False, True, False]},
+                          {"showlegend": True}]),
+                dict(label="Influenza & pnemonia",
+                    method="update",
+                    args=[{"visible": [True, False, False]},
+                          {"showlegend": True}]),
+                dict(label="Abnormal",
+                    method="update",
+                    args=[{"visible": [False, False, True]},
+                          {"showlegend": True}]),
+                dict(label="All",
+                    method="update",
+                    args=[{"visible": [True, True, True, True]},
+                          {"showlegend": True}]),
+
+            ]))])
+
+
+
+############################################################################################################################################################
+
+
+############################################################################################################################################################
+slider_year = dcc.Slider(
+        id='year_slider',
+        min=st['Week Ending Date'].min(),
+        max=st['Week Ending Date'].max(),
+        marks={str(i): '{}'.format(str(i)) for i in
+               [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]},
+        value=st['Week Ending Date'].min(),
+        step=1
+    )
+
+
+fig2 = go.Figure()
+fig2.add_trace(go.Scatter(x=random_x, y=random_y0,
+                    mode='lines+markers',
+                    name='lines+markers'))
+fig2.update_layout(
+    plot_bgcolor=colors['background'],
+    paper_bgcolor=colors['background'],
+    font_color=colors['text']
 )
 
-content = html.Div(id="page-content", style=CONTENT_STYLE)
+year=2020
+disease='Septicemia (A40-A41)'
 
-app.layout = html.Div([dcc.Location(id="url"), sidebar, content])
 
-@app.callback(Output("page-content", "children"), [Input("url", "pathname")])
-def render_page_content(pathname):
-    if pathname == "/":
-        return layout_home
-    elif pathname == "/page-1":
-        return layout_urbanism
-    elif pathname == "/page-2":
-        return layout_health
-    elif pathname == "/page-3":
-        return layout_monetary
-    elif pathname == "/page-4":
-        return layout_enviroment
+slider_year = dcc.Slider(
+        id='year_slider',
+        min=st['Week Ending Date'].min(),
+        max=st['Week Ending Date'].max(),
+        marks={str(i): '{}'.format(str(i)) for i in
+               [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]},
+        value=st['Week Ending Date'].min(),
+        step=1
+    )
+#fig5 = make_choropleth(2020,'Septicemia (A40-A41)')
+############################################################################################################################################################
+
+
+img = Image.open('images_LOG.png')
+
+app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
+    
+    html.Img(src=img, className = 'logo', height="60px"),
+    html.P(children="🥑", className="header-emoji"),
+    html.H1(
+        children='Tracking the sustainable development goals before the pandemic',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        }
+    ),
+
+    html.Div(children='SGD on CPLP Country.', style={
+        'textAlign': 'center',
+        'color': colors['text']
+    }),
+    
+    
+    dcc.Tabs(
+             id="tabs", value='tab-1', children=[
+        dcc.Tab(label='Deaths by Disease', value='tab-1'),
+        dcc.Tab(label='Deaths by State', value='tab-2'),
+        dcc.Tab(label='Map', value='tab-4'),
+        dcc.Tab(label='Table', value='tab-5'),
+        dcc.Tab(label='Sources', value='tab-6'),
+        dcc.Tab(label='Data Download', value='tab-7'),
+    ]),
+    
+     html.Div(id='tabs-content'
+    ),
+    
+
+])
+############################################################################################################################################################
+
+
+@app.callback(
+    Output('tabs-content', 'children'),
+     [Input('tabs', 'value')],
+     
+     )
+############################################################################################################################################################
+
+
+
+
+def render_content(tab):
+    if tab == 'tab-1':
+        return html.Div([
+            dcc.RadioItems(
+                id='lin_log',
+                options=[dict(label='Linear', value=0), dict(label='log', value=1)],
+                value=0,
+                labelStyle={'display': 'inline-block'}
+                ),          
+            dcc.Graph(
+                id='example-graph-1',
+                figure = fig
+                ),
+            
+        ])
+
+    
+    elif tab == 'tab-2':
+        return html.Div([
+            dcc.Dropdown(
+                id='disease1',
+                options=[{'label': i, 'value': i} for i in diseases],
+                value='All Cause'
+                ),
+            dcc.Graph(id = 'top10'),
+    
+            dcc.RangeSlider(
+                id = 'range',
+                min = 2014,
+                max = 2021,
+                value = [2015, 2017],
+                marks={str(i): '{}'.format(str(i)) for i in
+                       [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]})
+                ])
+        
+    elif tab == 'tab-4':
+        return html.Div([
+            dcc.Dropdown(
+                id='disease',
+                options=[{'label': i, 'value': i} for i in diseases],
+                value='All Cause'
+                ),
+            dcc.Graph(id = 'choropleth'),
+            
+            dcc.Slider(
+                id = 'year',
+                min = 2014,
+                max = 2021,
+                value = 2017,
+                marks={str(i): '{}'.format(str(i)) for i in
+                       [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]}
+                )
+            ])
+
+    elif tab == 'tab-5':
+        return html.Div([
+            dash_table.DataTable(
+                id='table',
+                columns=[{"name": i, "id": i} for i in st.columns],
+                data=st.to_dict('records'),
+                )
+        ])
+    
+    
+    elif tab == 'tab-6':
+        return html.Div([
+            html.H3('Tab content 7')         
+        ])
+    
+    
+    elif tab == 'tab-7':
+        return html.Div([
+            html.H3('Tab content 7')
+        ])
+ 
+@app.callback(
+     Output('top10', 'figure'),
+    [Input('disease1', 'value'),
+     Input('range', 'value')])
+   
+def top10(disease, date):
+    
+    dis = st.loc[:, [disease, "MMWR Year",'State']]
+    between  = dis[(dis['MMWR Year']>=date[0]) & (dis['MMWR Year']<=date[1])]
+    sumofdeaths = between.groupby('State').sum().reset_index()
+    top10withmoredeaths = sumofdeaths.sort_values(by=disease,ascending=False)[:10]
+    top10withmoredeaths = top10withmoredeaths.reset_index().sort_index(ascending=False)
+    
+    fig= go.Figure(go.Bar(x=top10withmoredeaths[disease], y=top10withmoredeaths['State'], orientation='h'))
+    
+    return fig
+
+@app.callback(
+    Output('choropleth', 'figure'),
+    [Input('disease', 'value'),
+     Input('year', 'value')])
+
+def display_choropleth(disease, year):
+    choropleth_dataset = st[(st['MMWR Year']==year)]
+    choropleth_dataset=choropleth_dataset.groupby('state_abv').sum().reset_index()
+    fig = px.choropleth(
+        choropleth_dataset,
+        color = disease,
+        locationmode="USA-states",
+        locations = 'state_abv',
+        #range_color = (dis_colorscale[disease][0], dis_colorscale[disease][1]),
+        color_continuous_scale="Viridis",
+        scope = 'usa')
+    
+    return fig
+############################################################################################################################################################
 
 if __name__ == '__main__':
-    app.run_server(debug= True)
-
+    app.run_server(debug=True)
