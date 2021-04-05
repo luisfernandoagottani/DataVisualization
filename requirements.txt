@@ -1,8 +1,9 @@
 gunicorn
 plotly
 dash
+requests
+dash_renderer
 dash-html-components
-dash_table
 dash-core-components
 pandas
-dash_bootstrap_components
+numpy
