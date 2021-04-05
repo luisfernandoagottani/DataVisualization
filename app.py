@@ -5,13 +5,6 @@ import plotly.graph_objects as go
 import pandas as pd
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
-import plotly.express as px
-import os
-from PIL import Image
-import glob
-import dash
-import dash_table
-import numpy as np
 
 # app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -24,11 +17,9 @@ colors = {
 
 #################################################################################################################################3
 # Page Layout
-img = Image.open('images_LOG.png')
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
 
-    html.Img(src=img, className = 'logo', height="60px"),
     html.H1(
         children='Tracking the sustainable development goals before the pandemic',
         style={
