@@ -115,7 +115,6 @@ def update_graph(xaxis_column_name, yaxis_column_name,
             marker={
                 'size': 15,
                 'opacity': 0.5,
-                'color': '#0470A3',
                 'line': {'width': 0.5, 'color': 'white'}
             }
         )],
@@ -259,7 +258,6 @@ def update_graph(xaxis_column_name, yaxis_column_name,
             marker={
                 'size': 15,
                 'opacity': 0.5,
-                'color': '#02981E',
                 'line': {'width': 0.5, 'color': 'green'}
             }
         )],
@@ -403,7 +401,6 @@ def update_graph(xaxis_column_name, yaxis_column_name,
             marker={
                 'size': 15,
                 'opacity': 0.5,
-                'color': '#E1D607',
                 'line': {'width': 0.5, 'color': 'white'}
             }
         )],
@@ -547,7 +544,6 @@ def update_graph(xaxis_column_name, yaxis_column_name,
             marker={
                 'size': 15,
                 'opacity': 0.5,
-                'color': '#BB530F',
                 'line': {'width': 0.5, 'color': 'white'}
             }
         )],
@@ -666,9 +662,23 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
 def render_content(tab):
     if tab == 'tab-1':
-        return layout_home
+        return ([dcc.Markdown('''
+                    # Links for download:
+                    In order to end the poverty and set the world on a path of peace, prosperity and opportunity for all on a healthy planet was launched in 2015 the 2030 Agenda for Sustainable Development by United Nations. The last report available contains data before the covid-19 pandemic. The actual pandemic has been putting at risk the 2030 agenda. As example, according with before the pandemic the progress has been uneven among the areas and after many of the implementations on SDGs turned back ages of progress. 
+
+                    The goal on this dashboard is to track some of the indicators on SDGs among countries who belong to the community of Portuguese Speaker (CPLP) before the pandemic. On the dashboard is possible to compare among the CPLP countries, the progress of 12 indicators before the Covid-19 pandemic. These indicators gave a view of the progress made on the following areas: Urbanisn, Health, Monetary, environment.    
+
+                    The indicator’s data available range between 2010 to 2018, although some have information until 2019. In order to make it easier to analyse the information, were chosen familiar graphics like dote charts, line charts and the user is allowed to select a country and see the progress off each indicator.  among them.
+                    '''),    
+                    layout_home,
+                    dcc.Markdown('''        
+                    Group AN: Geraldo Timbe, m20200603 | Manuel A. F. Carreiras, m20200500 | Luis F. R. Agottani, m20200621 | Venâncio Munhangane, m20200579 |
+                    ''')])
     elif tab == 'tab-2':
-        return layout_urbanism   
+        return ([dcc.Markdown('''
+                    # Urbanism:
+                    '''),  
+                layout_urbanism ])  
     elif tab == 'tab-4':
         return layout_health
     elif tab == 'tab-5':
@@ -676,7 +686,14 @@ def render_content(tab):
     elif tab == 'tab-6':
         return layout_enviroment
     elif tab == 'tab-7':
-        return layout_enviroment
+        return dcc.Markdown('''
+                    # Links for download:
+                    * [https://unstats.un.org/sdgs/indicators/database/](/)
+
+                    * [http://www.fao.org/faostat/en/#data](/)
+
+                    * [https://databank.worldbank.org/source/world-development-indicators](/)
+                    ''')   
 
 
 if __name__ == '__main__':
