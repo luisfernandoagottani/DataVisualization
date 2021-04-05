@@ -1,4 +1,7 @@
 gunicorn
+numpy
+glob
+os
 plotly
 dash
 dash_table
