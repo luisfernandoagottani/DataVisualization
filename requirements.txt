@@ -7,4 +7,3 @@ dash-core-components
 pandas
 dash_bootstrap_components
 Pillow
-json
