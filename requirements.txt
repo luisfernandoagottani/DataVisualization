@@ -1,9 +1,16 @@
 gunicorn
 plotly
+plotly.express
+plotly.graph_objects
 dash
+dash_table
 requests
 dash_renderer
 dash-html-components
 dash-core-components
+dash.dependencies 
 pandas
 numpy
+PIL
+urllib.request
+dash_bootstrap_components
