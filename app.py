@@ -610,6 +610,7 @@ def update_x_timeseries(hoverData, yaxis_column_name, axis_type):
 #################################################################################################################################3
 # Page Layout
 
+img = Image.open('images_LOG.png')
 
 colors = {
     'background': '#FFFFFF',
@@ -618,6 +619,7 @@ colors = {
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
 
+    html.Img(src=img, className = 'logo', height="60px"),
     html.H1(
         children='Tracking the sustainable development goals before the pandemic',
         style={
