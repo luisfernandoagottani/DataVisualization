@@ -28,7 +28,7 @@ layout_home = html.Div([
                         width = 1000,
                         height = 750,
                         range_color = [0,10],
-                        title = ' CPLP Countries: GDP growth (annual %)')
+                        title = ' CPLP Countries: GDP growth (annual %) from 2010 to 2020')
         )
     ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
 ])
@@ -622,13 +622,13 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
         children='Tracking the sustainable development goals before the pandemic',
         style={
             'textAlign': 'center',
-            'color': colors['text']
+            'color': '#053B78'
         }
     ),
 
     html.Div(children='SGD on CPLP Country.', style={
         'textAlign': 'center',
-        'color': colors['text']
+        'color': '#053B78'
     }),
     
     
@@ -639,7 +639,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
         dcc.Tab(label='Health', value='tab-4'),
         dcc.Tab(label='Monetary', value='tab-5'),
         dcc.Tab(label='Enviroment', value='tab-6'),
-        dcc.Tab(label='Data Download', value='tab-7'),
+        dcc.Tab(label='Data Source', value='tab-7'),
     ]),
     
      html.Div(id='tabs-content'
@@ -663,7 +663,6 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 def render_content(tab):
     if tab == 'tab-1':
         return ([dcc.Markdown('''
-                    # Links for download:
                     In order to end the poverty and set the world on a path of peace, prosperity and opportunity for all on a healthy planet was launched in 2015 the 2030 Agenda for Sustainable Development by United Nations. The last report available contains data before the covid-19 pandemic. The actual pandemic has been putting at risk the 2030 agenda. As example, according with before the pandemic the progress has been uneven among the areas and after many of the implementations on SDGs turned back ages of progress. 
 
                     The goal on this dashboard is to track some of the indicators on SDGs among countries who belong to the community of Portuguese Speaker (CPLP) before the pandemic. On the dashboard is possible to compare among the CPLP countries, the progress of 12 indicators before the Covid-19 pandemic. These indicators gave a view of the progress made on the following areas: Urbanisn, Health, Monetary, environment.    
@@ -676,15 +675,24 @@ def render_content(tab):
                     ''')])
     elif tab == 'tab-2':
         return ([dcc.Markdown('''
-                    # Urbanism:
+                    ## Select indicators and year for analysis.
                     '''),  
                 layout_urbanism ])  
     elif tab == 'tab-4':
-        return layout_health
+        return ([dcc.Markdown('''
+                    ## Select indicators and year for analysis.
+                    '''), 
+                layout_health])
     elif tab == 'tab-5':
-        return layout_monetary
+        return ([dcc.Markdown('''
+                    ## Select indicators and year for analysis.
+                    '''), 
+                layout_monetary])
     elif tab == 'tab-6':
-        return layout_enviroment
+        return ([dcc.Markdown('''
+                    ## Select indicators and year for analysis.
+                    '''), 
+                layout_enviroment])
     elif tab == 'tab-7':
         return dcc.Markdown('''
                     # Links for download:
@@ -693,6 +701,9 @@ def render_content(tab):
                     * [http://www.fao.org/faostat/en/#data](/)
 
                     * [https://databank.worldbank.org/source/world-development-indicators](/)
+                    # GitHub
+
+                    *[https://github.com/luisfernandoagottani/DataVisualization](/)
                     ''')   
 
 
