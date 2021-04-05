@@ -6,29 +6,9 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.express as px
-import os
-from PIL import Image
-import glob
 
-import dash
-import dash_table
-import dash_core_components as dcc
-import dash_html_components as html
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
-from dash.dependencies import Input, Output
-import numpy as np
-from urllib.request import urlopen
+app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-colors = {
-    'background': '#FFFFFF',
-    'text': '#111111'
-}
 
 df = pd.read_excel('Indicadores_base.xlsx', sheet_name = 'All_data')
 
@@ -626,68 +606,62 @@ def update_x_timeseries(hoverData, yaxis_column_name, axis_type):
     return create_time_series(dff, axis_type, yaxis_column_name)
 
 
+# the style arguments for the sidebar. We use position:fixed and a fixed width
+SIDEBAR_STYLE = {
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "bottom": 0,
+    "width": "16rem",
+    "padding": "2rem 1rem",
+    "background-color": "#035D9B"
+}
 
-#################################################################################################################################3
-# Page Layout
-img = Image.open('images_LOG.png')
+# the styles for the main content position it to the right of the sidebar and
+# add some padding.
+CONTENT_STYLE = {
+    "margin-left": "18rem",
+    "margin-right": "2rem",
+    "padding": "2rem 1rem",
+}
 
-app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
+sidebar = html.Div(
+    [
+        html.H2("CPLP Countries", className="display-4", style={'color': 'white'}),
+        html.Hr(),
+        html.P(
+            "Analysis", className="lead", style={'color': 'white'}
+        ),
+        dbc.Nav(
+            [
+                dbc.NavLink("Home", href="/", active="exact", style={'color': 'white'}),
+                dbc.NavLink("Urbanism", href="/page-1", active="exact", style={'color': 'white'}),
+                dbc.NavLink("Health", href="/page-2", active="exact", style={'color': 'white'}),
+                dbc.NavLink("Monetary", href="/page-3", active="exact", style={'color': 'white'}),
+                dbc.NavLink("Enviroment", href="/page-4", active="exact", style={'color': 'white'}),
+            ],
+            vertical=True,
+            pills=True,
+        ),
+    ],
+    style=SIDEBAR_STYLE,
+)
 
-    html.Img(src=img, className = 'logo', height="60px"),
-    html.H1(
-        children='Tracking the sustainable development goals before the pandemic',
-        style={
-            'textAlign': 'center',
-            'color': colors['text']
-        }
-    ),
+content = html.Div(id="page-content", style=CONTENT_STYLE)
 
-    html.Div(children='SGD on CPLP Country.', style={
-        'textAlign': 'center',
-        'color': colors['text']
-    }),
-    
-    
-    dcc.Tabs(
-             id="tabs", value='tab-1', children=[
-        dcc.Tab(label='Home', value='tab-1'),
-        dcc.Tab(label='Urbanism', value='tab-2'),
-        dcc.Tab(label='Health', value='tab-4'),
-        dcc.Tab(label='Monetary', value='tab-5'),
-        dcc.Tab(label='Enviroment', value='tab-6'),
-        dcc.Tab(label='Data Download', value='tab-7'),
-    ]),
-    
-     html.Div(id='tabs-content'
-    ),
-    
+app.layout = html.Div([dcc.Location(id="url"), sidebar, content])
 
-])
-############################################################################################################################################################
-
-
-@app.callback(
-    Output('tabs-content', 'children'),
-     [Input('tabs', 'value')],
-     
-     )
-############################################################################################################################################################
-
-
-
-
-def render_content(tab):
-    if tab == 'tab-1':
+@app.callback(Output("page-content", "children"), [Input("url", "pathname")])
+def render_page_content(pathname):
+    if pathname == "/":
         return layout_home
-    elif tab == 'tab-2':
-        return layout_urbanism   
-    elif tab == 'tab-4':
+    elif pathname == "/page-1":
+        return layout_urbanism
+    elif pathname == "/page-2":
         return layout_health
-    elif tab == 'tab-5':
+    elif pathname == "/page-3":
         return layout_monetary
-    elif tab == 'tab-6':
-        return layout_enviroment
-    elif tab == 'tab-7':
+    elif pathname == "/page-4":
         return layout_enviroment
 
 if __name__ == '__main__':
