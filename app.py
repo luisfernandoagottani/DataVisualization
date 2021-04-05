@@ -4,12 +4,32 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import dash
+import plotly.express as px
 from dash.dependencies import Input, Output
+
 
 app = dash.Dash(__name__)
 
 server = app.server
 
+df = pd.read_excel('Indicadores_base.xlsx', sheet_name = 'All_data')
+
+layout_home = html.Div([
+    html.Div([
+        dcc.Graph(
+            id='world',
+            figure = px.choropleth(df[df['Indicator Name'] == 'GDP growth (annual %)'], 
+                        locations="Country Code", 
+                        color="Value", 
+                        hover_name="Country Name",
+                        animation_frame="Year",
+                        width = 1000,
+                        height = 750,
+                        range_color = [0,10],
+                        title = ' CPLP Countries: GDP growth (annual %)')
+        )
+    ], style={'width': '49%', 'display': 'inline-block', 'padding': '0 20'}),
+])
 # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 colors = {
@@ -66,7 +86,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
 def render_content(tab):
     if tab == 'tab-1':
-        return html.P("This is the content of page 1. Yay!")
+        return layout_home
     elif tab == 'tab-2':
         return html.P("This is the content of page 1. Yay!")  
     elif tab == 'tab-4':
