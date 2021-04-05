@@ -6,6 +6,7 @@ import numpy as np
 import dash
 import plotly.express as px
 from dash.dependencies import Input, Output
+from PIL import Image
 
 app = dash.Dash(__name__,suppress_callback_exceptions=True)
 
