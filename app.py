@@ -703,7 +703,7 @@ def render_content(tab):
                     * [https://databank.worldbank.org/source/world-development-indicators](/)
                     # GitHub
 
-                    *[https://github.com/luisfernandoagottani/DataVisualization](/)
+                    * [https://github.com/luisfernandoagottani/DataVisualization](/)
                     ''')   
 
 
