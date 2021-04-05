@@ -11,7 +11,7 @@ app = dash.Dash(__name__,suppress_callback_exceptions=True)
 
 server = app.server
 
-df = pd.read_excel('Indicadores_base.xlsx', sheet_name = 'All_data')
+df = pd.read_csv('Indicadores_base.csv')
 
 layout_home = html.Div([
     html.Div([
